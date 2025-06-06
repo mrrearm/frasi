@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizzatore di Frasi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background: linear-gradient(135deg, #8B4513 0%, #D2B48C 50%, #F5E6D3 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(245, 230, 211, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(139, 69, 19, 0.3);
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(210, 180, 140, 0.5);
+        }
+
+        .title {
+            text-align: center;
+            color: #8B4513;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            font-weight: bold;
+        }
+
+        .phrase-box {
+            background: linear-gradient(145deg, #F5E6D3, #E8D5C4);
+            border: 3px solid #D2B48C;
+            border-radius: 15px;
+            padding: 40px;
+            margin: 30px 0;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                inset 0 2px 4px rgba(255,255,255,0.3),
+                0 8px 16px rgba(139, 69, 19, 0.2);
+        }
+
+        .phrase-box:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 
+                inset 0 2px 4px rgba(255,255,255,0.4),
+                0 15px 30px rgba(139, 69, 19, 0.3);
+            border-color: #CD853F;
+        }
+
+        .phrase-box:active {
+            transform: translateY(-2px) scale(1.01);
+        }
+
+        .phrase-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .phrase-box:hover::before {
+            left: 100%;
+        }
+
+        .phrase-text {
+            font-size: 1.4em;
+            line-height: 1.6;
+            color: #5D4037;
+            font-style: italic;
+            position: relative;
+            z-index: 1;
+            max-width: 100%;
+        }
+
+        .phrase-text.loading {
+            color: #8B4513;
+            font-style: normal;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            background: linear-gradient(145deg, #8B4513, #A0522D);
+            color: #F5E6D3;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 1em;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(139, 69, 19, 0.3);
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            background: linear-gradient(145deg, #A0522D, #8B4513);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(139, 69, 19, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .counter {
+            text-align: center;
+            margin-top: 20px;
+            color: #8B4513;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #CD853F;
+            text-align: center;
+            font-style: normal;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .phrase-text {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .title {
+                font-size: 2em;
+            }
+            
+            .phrase-box {
+                padding: 25px;
+                min-height: 150px;
+            }
+            
+            .phrase-text {
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">✨ Visualizzatore di Frasi ✨</h1>
+        
+        <div class="phrase-box" id="phraseBox" onclick="nextPhrase()">
+            <div class="phrase-text loading" id="phraseText">
+                Caricamento frasi dal README.md...
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" onclick="previousPhrase()">← Precedente</button>
+            <button class="btn" onclick="nextPhrase()">Successiva →</button>
+        </div>
+        
+        <div class="counter" id="counter"></div>
+    </div>
+
+    <script>
+        let phrases = [];
+        let currentIndex = 0;
+
+        // Carica le frasi dal README.md
+        async function loadPhrases() {
+            try {
+                const response = await fetch('README.md');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const text = await response.text();
+                
+                // Estrae le frasi dal testo (divise per punto, punto esclamativo o punto interrogativo)
+                phrases = text
+                    .split(/[.!?]+/)
+                    .map(phrase => phrase.trim())
+                    .filter(phrase => phrase.length > 10) // Filtra frasi troppo corte
+                    .map(phrase => phrase.charAt(0).toUpperCase() + phrase.slice(1)); // Capitalizza
+                
+                if (phrases.length === 0) {
+                    phrases = ['Il file README.md sembra essere vuoto o non contiene frasi valide.'];
+                }
+                
+                showPhrase();
+                updateCounter();
+            } catch (error) {
+                console.error('Errore nel caricamento del README.md:', error);
+                phrases = [
+                    'Impossibile caricare il file README.md',
+                    'Assicurati che il file README.md sia presente nella stessa cartella',
+                    'Esempio di frase elegante per il visualizzatore',
+                    'Le parole hanno il potere di ispirare e trasformare',
+                    'Ogni frase racconta una storia unica'
+                ];
+                showPhrase();
+                updateCounter();
+            }
+        }
+
+        function showPhrase() {
+            const phraseElement = document.getElementById('phraseText');
+            phraseElement.style.opacity = '0';
+            
+            setTimeout(() => {
+                phraseElement.textContent = phrases[currentIndex];
+                phraseElement.className = 'phrase-text';
+                phraseElement.style.opacity = '1';
+            }, 200);
+        }
+
+        function nextPhrase() {
+            if (phrases.length === 0) return;
+            currentIndex = (currentIndex + 1) % phrases.length;
+            showPhrase();
+            updateCounter();
+        }
+
+        function previousPhrase() {
+            if (phrases.length === 0) return;
+            currentIndex = (currentIndex - 1 + phrases.length) % phrases.length;
+            showPhrase();
+            updateCounter();
+        }
+
+        function updateCounter() {
+            const counterElement = document.getElementById('counter');
+            if (phrases.length > 0) {
+                counterElement.textContent = `Frase ${currentIndex + 1} di ${phrases.length}`;
+            }
+        }
+
+        // Gestione tasti freccia
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowRight' || event.key === ' ') {
+                event.preventDefault();
+                nextPhrase();
+            } else if (event.key === 'ArrowLeft') {
+                event.preventDefault();
+                previousPhrase();
+            }
+        });
+
+        // Carica le frasi all'avvio
+        loadPhrases();
+    </script>
+</body>
+</html>
