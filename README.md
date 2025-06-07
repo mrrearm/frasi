@@ -8,3 +8,4 @@ Il tuo viso, è la testimonianza stessa dell'esistenza del paradiso?
 Non preoccuparti delle mie parole, preoccupati dei miei silenzi?
 Resilienza, è il termine per indicare la tua presenza? 
 Se ti rifletti in uno specchio tu continuerai a vedere te stessa, io continuerò a vedere un angelo?
+Sei una libellula che aspetta ancora il suo volo migliore?
